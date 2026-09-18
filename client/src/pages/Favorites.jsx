@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 const Favorites = () => {
   const [favoriteRecipes, setFavoriteRecipes] = useState([]);
@@ -14,101 +14,124 @@ const Favorites = () => {
   }, []);
 
   const fetchFavorites = async () => {
+    setLoading(true);
     const token = localStorage.getItem('token');
-    console.log('[Favorites] Current Token:', token);
-
     if (!token) {
-      alert('Please log in to view your favorites.');
       navigate('/login');
       return;
     }
 
     try {
-      setLoading(true);
-      const res = await axios.get(`${API_BASE_URL}/auth/favorites`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+      // 1. Fetch user's favorited IDs or objects from auth endpoint
+      const favRes = await axios.get(`${API_BASE_URL}/auth/favorites`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      
-      console.log('[Favorites] Data received from backend:', res.data);
 
-      const items = Array.isArray(res.data) ? res.data : [];
-      setFavoriteRecipes(items.filter(item => item !== null));
+      // 2. Fetch full recipe list to match against saved favorites
+      const recipeRes = await axios.get(`${API_BASE_URL}/recipes`);
+      const allRecipes = Array.isArray(recipeRes.data)
+        ? recipeRes.data
+        : recipeRes.data.recipes || [];
+
+      // Normalize IDs
+      const rawFavs = Array.isArray(favRes.data) ? favRes.data : [];
+      const favIdSet = new Set(
+        rawFavs.map(item => (typeof item === 'string' ? item : item._id))
+      );
+
+      // Filter recipes that exist in user's favorites
+      const matched = allRecipes.filter(r => favIdSet.has(r._id) || r.isFavorite);
+      setFavoriteRecipes(matched);
     } catch (err) {
-      console.error('[Favorites] Error fetching favorites:', err);
-      alert(err.response?.data?.message || 'Failed to load favorites.');
+      console.error('Failed to load favorites:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRemoveFavorite = async (recipeId) => {
+  const handleRemoveFavorite = async (e, recipeId) => {
+    e.stopPropagation();
     const token = localStorage.getItem('token');
+
+    // Optimistic remove
+    setFavoriteRecipes(prev => prev.filter(r => r._id !== recipeId));
+
     try {
       await axios.post(
         `${API_BASE_URL}/auth/favorites/${recipeId}`,
         {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-      setFavoriteRecipes(prev => prev.filter(recipe => recipe._id !== recipeId));
     } catch (err) {
-      console.error('Error removing favorite:', err);
+      console.error('Failed to remove favorite:', err);
+      // Refetch if error occurs
+      fetchFavorites();
     }
   };
 
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
-      <header style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px' }}>My Favorites</h1>
-        <p style={{ color: '#666' }}>All your saved dishes in one place</p>
+      {/* Header */}
+      <header style={{ marginBottom: '28px' }}>
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px', color: '#1a1a1a' }}>
+          Saved Favorites
+        </h1>
+        <p style={{ color: '#666', margin: 0 }}>All your bookmarked recipes in one convenient place</p>
       </header>
 
+      {/* Grid Content */}
       {loading ? (
-        <p>Loading your favorite recipes...</p>
+        <p style={{ textAlign: 'center', color: '#888', marginTop: '60px' }}>Loading saved recipes...</p>
       ) : favoriteRecipes.length === 0 ? (
-        <div style={{ textAlign: 'center', marginTop: '40px' }}>
-          <p style={{ fontSize: '18px', color: '#777' }}>You haven't added any favorite recipes yet.</p>
-          <button
-            onClick={() => navigate('/')}
+        <div style={{ textAlign: 'center', padding: '60px 0', border: '1px dashed #ddd', borderRadius: '16px' }}>
+          <p style={{ fontSize: '16px', color: '#666', marginBottom: '16px' }}>
+            You haven't saved any recipes to your favorites yet.
+          </p>
+          <Link
+            to="/"
             style={{
-              marginTop: '16px',
-              padding: '10px 20px',
-              backgroundColor: '#b3391b',
+              display: 'inline-block',
+              backgroundColor: '#db3391',
               color: '#fff',
-              border: 'none',
+              textDecoration: 'none',
+              padding: '10px 20px',
               borderRadius: '8px',
-              cursor: 'pointer'
+              fontWeight: '600',
+              fontSize: '14px'
             }}
           >
-            Browse Recipes
-          </button>
+            Explore Recipes →
+          </Link>
         </div>
       ) : (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-          gap: '24px'
-        }}>
-          {favoriteRecipes.map((recipe) => (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+            gap: '24px'
+          }}
+        >
+          {favoriteRecipes.map(recipe => (
             <div
               key={recipe._id}
+              onClick={() => navigate(`/recipe/${recipe._id}`)}
               style={{
                 border: '1px solid #eee',
                 borderRadius: '16px',
                 overflow: 'hidden',
                 position: 'relative',
                 backgroundColor: '#fff',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column'
               }}
             >
+              {/* Unfavorite Heart Button */}
               <button
                 type="button"
-                onClick={() => handleRemoveFavorite(recipe._id)}
+                onClick={e => handleRemoveFavorite(e, recipe._id)}
+                title="Remove from favorites"
                 style={{
                   position: 'absolute',
                   top: '12px',
@@ -123,37 +146,82 @@ const Favorites = () => {
                   justifyContent: 'center',
                   cursor: 'pointer',
                   boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                  fontSize: '18px'
+                  fontSize: '18px',
+                  zIndex: 2
                 }}
-                title="Remove from favorites"
               >
                 ❤️
               </button>
 
+              {/* Image */}
               <img
-                src={recipe.image || 'https://via.placeholder.com/300x200?text=No+Image'}
-                alt={recipe.title || recipe.name || 'Recipe'}
-                style={{ width: '100%', height: '180px', objectFit: 'cover' }}
+                src={
+                  recipe.imageUrl ||
+                  recipe.img ||
+                  recipe.image ||
+                  'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=500'
+                }
+                alt={recipe.title || recipe.name}
+                onError={e => {
+                  e.target.onerror = null;
+                  e.target.src =
+                    'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=500';
+                }}
+                style={{
+                  width: '100%',
+                  height: '180px',
+                  objectFit: 'cover'
+                }}
               />
 
-              <div style={{ padding: '16px' }}>
-                <span style={{
-                  fontSize: '12px',
-                  color: '#888',
-                  textTransform: 'uppercase',
-                  letterSpacing: '1px',
-                  fontWeight: 'bold'
-                }}>
-                  {recipe.category || 'Lunch & Dinners'}
+              {/* Details */}
+              <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                <span
+                  style={{
+                    fontSize: '11px',
+                    color: '#db3391',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px',
+                    fontWeight: 'bold',
+                    marginBottom: '4px'
+                  }}
+                >
+                  {recipe.category || 'General'}
                 </span>
-                <h3 style={{ margin: '8px 0', fontSize: '18px' }}>
+                <h3
+                  style={{
+                    margin: '4px 0 8px 0',
+                    fontSize: '17px',
+                    fontWeight: 'bold',
+                    color: '#222'
+                  }}
+                >
                   {recipe.title || recipe.name}
                 </h3>
                 {recipe.description && (
-                  <p style={{ fontSize: '14px', color: '#666', lineHeight: '1.4' }}>
-                    {recipe.description.slice(0, 70)}...
+                  <p
+                    style={{
+                      fontSize: '13px',
+                      color: '#666',
+                      lineHeight: '1.4',
+                      marginBottom: '12px'
+                    }}
+                  >
+                    {recipe.description.slice(0, 65)}...
                   </p>
                 )}
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    marginTop: 'auto',
+                    fontSize: '12px',
+                    color: '#888'
+                  }}
+                >
+                  <span>⏱ {recipe.cookingTime || 30} mins</span>
+                  <span>🍽 {recipe.servings || 2} servings</span>
+                </div>
               </div>
             </div>
           ))}

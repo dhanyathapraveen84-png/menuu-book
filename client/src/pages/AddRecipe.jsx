@@ -3,168 +3,233 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 const AddRecipe = () => {
-  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     title: '',
     category: 'Lunch & Dinners',
-    image: '',
-    prepTime: '',
+    cookingTime: 30,
+    servings: 2,
     description: '',
     ingredients: '',
     instructions: ''
   });
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
-  const categories = ['Breakfast', 'Lunch & Dinners', 'Evening Meals', 'Desserts'];
+  const API_BASE_URL = 'http://localhost:5000/api';
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: name === 'cookingTime' || name === 'servings' ? Number(value) : value
+    }));
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
 
     const token = localStorage.getItem('token');
     if (!token) {
-      alert('Please log in first to create a recipe.');
+      alert('Please log in to add a recipe.');
       navigate('/login');
       return;
     }
 
     try {
-      setLoading(true);
-      await axios.post(
-        'http://localhost:5000/api/recipes',
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+      const data = new FormData();
+      data.append('title', formData.title);
+      data.append('category', formData.category);
+      data.append('cookingTime', formData.cookingTime);
+      data.append('servings', formData.servings);
+      data.append('description', formData.description);
+      data.append('instructions', formData.instructions);
 
-      alert('Recipe published successfully!');
+      // Split ingredients by newline into JSON string
+      const ingredientsArray = formData.ingredients
+        .split('\n')
+        .map(i => i.trim())
+        .filter(Boolean);
+      data.append('ingredients', JSON.stringify(ingredientsArray));
+
+      if (selectedFile) {
+        data.append('image', selectedFile);
+      }
+
+      await axios.post(`${API_BASE_URL}/recipes`, data, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
       navigate('/my-recipes');
     } catch (err) {
-      console.error('Failed to create recipe:', err);
-      alert(err.response?.data?.message || 'Error creating recipe.');
+      console.error('Failed to add recipe:', err);
+      setError(err.response?.data?.message || 'Failed to create recipe. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: '680px', margin: '40px auto', padding: '32px', background: '#fff', borderRadius: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.06)' }}>
-      <h2 style={{ fontSize: '26px', fontWeight: 'bold', marginBottom: '8px' }}>Create New Recipe</h2>
-      <p style={{ color: '#666', marginBottom: '28px' }}>Share your culinary ideas with the community</p>
+    <div style={{ padding: '24px', maxWidth: '700px', margin: '0 auto' }}>
+      <h1 style={{ fontSize: '26px', fontWeight: 'bold', marginBottom: '8px', color: '#1a1a1a' }}>
+        Add New Recipe
+      </h1>
+      <p style={{ color: '#666', marginBottom: '24px' }}>Share your culinary creation with the world</p>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+      {error && (
+        <div style={{ padding: '12px', backgroundColor: '#ffebee', color: '#c62828', borderRadius: '8px', marginBottom: '16px' }}>
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div>
-          <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', fontSize: '14px' }}>Recipe Title *</label>
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Recipe Title</label>
           <input
             type="text"
             name="title"
-            required
             value={formData.title}
             onChange={handleChange}
-            placeholder="e.g. Pan-fried Garlic Butter Steak"
-            style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '15px' }}
+            placeholder="e.g. Creamy Tuscan Garlic Chicken"
+            required
+            style={{ width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: '8px', boxSizing: 'border-box' }}
           />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
           <div>
-            <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', fontSize: '14px' }}>Category *</label>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Category</label>
             <select
               name="category"
               value={formData.category}
               onChange={handleChange}
-              style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '15px' }}
+              style={{ width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: '8px' }}
             >
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
+              <option value="Breakfast">Breakfast</option>
+              <option value="Lunch & Dinners">Lunch & Dinners</option>
+              <option value="Evening Meals">Evening Meals</option>
             </select>
           </div>
-
           <div>
-            <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', fontSize: '14px' }}>Prep Time</label>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Cook Time (minutes)</label>
             <input
-              type="text"
-              name="prepTime"
-              value={formData.prepTime}
+              type="number"
+              name="cookingTime"
+              value={formData.cookingTime}
               onChange={handleChange}
-              placeholder="e.g. 25 mins"
-              style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '15px' }}
+              min="1"
+              style={{ width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: '8px', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Servings</label>
+            <input
+              type="number"
+              name="servings"
+              value={formData.servings}
+              onChange={handleChange}
+              min="1"
+              style={{ width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: '8px', boxSizing: 'border-box' }}
             />
           </div>
         </div>
 
+        {/* Image File Picker & Preview */}
         <div>
-          <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', fontSize: '14px' }}>Image URL</label>
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Recipe Photo</label>
           <input
-            type="text"
-            name="image"
-            value={formData.image}
-            onChange={handleChange}
-            placeholder="https://images.unsplash.com/..."
-            style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '15px' }}
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '8px', boxSizing: 'border-box' }}
           />
+          {previewUrl && (
+            <div style={{ marginTop: '12px' }}>
+              <img
+                src={previewUrl}
+                alt="Preview"
+                style={{ width: '100%', maxHeight: '240px', objectFit: 'cover', borderRadius: '10px', border: '1px solid #eee' }}
+              />
+            </div>
+          )}
         </div>
 
         <div>
-          <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', fontSize: '14px' }}>Short Description</label>
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Short Description</label>
           <textarea
             name="description"
-            rows="2"
             value={formData.description}
             onChange={handleChange}
-            placeholder="A quick summary of the dish..."
-            style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '15px' }}
+            rows="2"
+            placeholder="A short appetizing overview..."
+            style={{ width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: '8px', boxSizing: 'border-box' }}
           />
         </div>
 
         <div>
-          <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', fontSize: '14px' }}>Ingredients (comma-separated)</label>
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Ingredients (one per line)</label>
           <textarea
             name="ingredients"
-            rows="3"
             value={formData.ingredients}
             onChange={handleChange}
-            placeholder="6 oz Asparagus, 4 cloves garlic, 1 lb baby potatoes, 2 sprigs thyme"
-            style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '15px' }}
+            rows="4"
+            placeholder="2 chicken breasts&#10;1 cup heavy cream&#10;3 cloves garlic, minced"
+            style={{ width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: '8px', boxSizing: 'border-box' }}
           />
         </div>
 
         <div>
-          <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', fontSize: '14px' }}>Cooking Procedure</label>
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Instructions (one step per line)</label>
           <textarea
             name="instructions"
-            rows="4"
             value={formData.instructions}
             onChange={handleChange}
-            placeholder="Step 1: Season the steak... Step 2: Heat skillet..."
-            style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '15px' }}
+            rows="5"
+            placeholder="Season chicken breasts with salt and pepper.&#10;Heat olive oil in skillet.&#10;Cook until golden brown."
+            style={{ width: '100%', padding: '10px 14px', border: '1px solid #ddd', borderRadius: '8px', boxSizing: 'border-box' }}
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            marginTop: '12px',
-            padding: '14px',
-            backgroundColor: '#b3391b',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '8px',
-            fontWeight: '600',
-            fontSize: '16px',
-            cursor: 'pointer'
-          }}
-        >
-          {loading ? 'Submitting...' : 'Publish Recipe'}
-        </button>
+        <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            style={{ padding: '12px 20px', border: '1px solid #ddd', background: '#fff', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              padding: '12px 24px',
+              backgroundColor: '#db3391',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontWeight: '600',
+              flex: 1
+            }}
+          >
+            {loading ? 'Uploading & Publishing...' : 'Publish Recipe'}
+          </button>
+        </div>
       </form>
     </div>
   );

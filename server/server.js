@@ -1,28 +1,42 @@
 const express = require('express');
-const router = express.Router();
-const Recipe = require('../models/Recipe');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const path = require('path');
+require('dotenv').config();
 
-// @route   GET /api/recipes
-// @desc    Get all recipes
-router.get('/', async (req, res) => {
-  try {
-    const recipes = await Recipe.find({});
-    res.json(recipes);
-  } catch (err) {
-    console.error('Fetch recipes error:', err);
-    res.status(500).json({ message: 'Error loading recipes', error: err.message });
-  }
+const app = express();
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Serve uploaded images statically
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// API Routes
+app.use('/api/recipes', require('./routes/recipeRoutes'));
+app.use('/api/auth', require('./routes/authRoutes'));
+
+// Basic health check route
+app.get('/', (req, res) => {
+  res.send('Menu Book API is running...');
 });
 
-// @route   POST /api/recipes
-// @desc    Create a recipe
-router.post('/', async (req, res) => {
-  try {
-    const recipe = await Recipe.create(req.body);
-    res.status(201).json(recipe);
-  } catch (err) {
-    res.status(400).json({ message: 'Failed to create recipe', error: err.message });
-  }
-});
+// Database Connection & Server Startup
+const PORT = process.env.PORT || 5000;
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
 
-module.exports = router;
+mongoose
+  .connect(process.env.MONGO_URI, {
+    serverSelectionTimeoutMS: 5000,
+  })
+  .then(() => {
+    console.log('MongoDB connected successfully!');
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('MongoDB connection error:', err.message);
+  });

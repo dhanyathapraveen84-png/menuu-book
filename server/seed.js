@@ -17,11 +17,11 @@ async function runSeed() {
     await User.create({
       name: 'Dhanyatha',
       email: 'dhanyathapraveen84@gmail.com',
-      password: '123',
+      password: 'password123',
       role: 'user',
     });
 
-    console.log('SEEDING SUCCESSFUL: dhanyathapraveen84@gmail.com /123');
+    console.log('SEEDING SUCCESSFUL: dhanyathapraveen84@gmail.com /password123');
     process.exit(0);
   } catch (err) {
     console.error('Seed error:', err.message);
