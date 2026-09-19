@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 
 // Layout & Pages
 import Layout from './components/Layout';
+import ProtectedRoute from './components/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
 import Favorites from './pages/Favorites';
 import AddRecipe from './pages/AddRecipe';
@@ -24,9 +25,30 @@ function App() {
         {/* Main Application with Persistent Sidebar Navigation */}
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
-          <Route path="favorites" element={<Favorites />} />
-          <Route path="add-recipe" element={<AddRecipe />} />
-          <Route path="my-recipes" element={<MyRecipes />} />
+          <Route
+            path="favorites"
+            element={
+              <ProtectedRoute>
+                <Favorites />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="add-recipe"
+            element={
+              <ProtectedRoute>
+                <AddRecipe />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="my-recipes"
+            element={
+              <ProtectedRoute>
+                <MyRecipes />
+              </ProtectedRoute>
+            }
+          />
           <Route path="recipe/:id" element={<RecipeDetail />} />
         </Route>
 
