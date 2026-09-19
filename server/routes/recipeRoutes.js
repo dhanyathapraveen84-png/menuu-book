@@ -104,7 +104,7 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
     // Use uploaded file path if present, otherwise fallback to URL or default
     let finalImageUrl = imageUrl || '';
     if (req.file) {
-      finalImageUrl = `http://localhost:5000/uploads/${req.file.filename}`;
+      finalImageUrl = `https://menuu-book.onrender.com/uploads/${req.file.filename}`;
     }
 
     // Parse ingredients if sent as a JSON string
@@ -194,6 +194,50 @@ router.delete('/:id', authMiddleware, async (req, res) => {
   } catch (err) {
     console.error('Delete recipe error:', err.message);
     res.status(500).json({ message: 'Error deleting recipe' });
+  }
+});
+
+// 9. POST add rating and review
+router.post('/:id/reviews', async (req, res) => {
+  try {
+    const { rating, comment, user } = req.body;
+    const numericRating = Number(rating);
+
+    if (!numericRating || numericRating < 1 || numericRating > 5) {
+      return res.status(400).json({ message: 'Rating must be a number between 1 and 5' });
+    }
+
+    if (!comment || !comment.trim()) {
+      return res.status(400).json({ message: 'Review comment cannot be empty' });
+    }
+
+    const recipe = await Recipe.findById(req.params.id);
+    if (!recipe) {
+      return res.status(404).json({ message: 'Recipe not found' });
+    }
+
+    const newReview = {
+      user: user || 'Anonymous',
+      rating: numericRating,
+      comment: comment.trim()
+    };
+
+    recipe.reviews.push(newReview);
+    recipe.numReviews = recipe.reviews.length;
+
+    // Calculate updated average rating
+    const totalScore = recipe.reviews.reduce((acc, item) => acc + item.rating, 0);
+    recipe.averageRating = Number((totalScore / recipe.reviews.length).toFixed(1));
+
+    const updatedRecipe = await recipe.save();
+
+    res.status(201).json({
+      message: 'Review added successfully',
+      recipe: updatedRecipe
+    });
+  } catch (err) {
+    console.error('Add review error:', err.message);
+    res.status(500).json({ message: 'Server error while submitting review' });
   }
 });
 

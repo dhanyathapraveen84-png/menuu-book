@@ -1,5 +1,29 @@
 const mongoose = require('mongoose');
 
+// Sub-document schema for individual reviews
+const reviewSchema = new mongoose.Schema(
+  {
+    user: {
+      type: String,
+      required: true,
+      default: 'Anonymous',
+      trim: true,
+    },
+    rating: {
+      type: Number,
+      required: true,
+      min: 1,
+      max: 5,
+    },
+    comment: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+  },
+  { timestamps: true }
+);
+
 const recipeSchema = new mongoose.Schema(
   {
     title: {
@@ -45,6 +69,16 @@ const recipeSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
+    },
+    // Ratings and Reviews
+    reviews: [reviewSchema],
+    averageRating: {
+      type: Number,
+      default: 0,
+    },
+    numReviews: {
+      type: Number,
+      default: 0,
     },
   },
   { timestamps: true }
