@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Recipe = require('../models/Recipe');
 const authMiddleware = require('../middleware/authMiddleware');
-const { upload } = require('../middleware/cloudinary');
+const { upload, cloudinary } = require('../middleware/cloudinary');
 
 // 1. GET all recipes
 router.get('/', async (req, res) => {
@@ -171,6 +171,20 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     const currentUserId = (req.user._id || req.user.id).toString();
     if (recipe.user && recipe.user.toString() !== currentUserId) {
       return res.status(403).json({ message: 'Not authorized to delete this recipe' });
+    }
+
+    // If the recipe has a Cloudinary image, remove it from Cloudinary
+    if (recipe.imageUrl && recipe.imageUrl.includes('cloudinary.com')) {
+      try {
+        const parts = recipe.imageUrl.split('/');
+        const fileName = parts.pop().split('.')[0];
+        const folder = parts.pop();
+        const publicId = `${folder}/${fileName}`;
+
+        await cloudinary.uploader.destroy(publicId);
+      } catch (cloudErr) {
+        console.error('Failed to delete image from Cloudinary:', cloudErr.message);
+      }
     }
 
     await Recipe.findByIdAndDelete(req.params.id);
