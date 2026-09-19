@@ -120,7 +120,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // 7. PUT update recipe
-router.put('/:id', authMiddleware, async (req, res) => {
+router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
   try {
     const recipe = await Recipe.findById(req.params.id);
     if (!recipe) {
@@ -132,10 +132,27 @@ router.put('/:id', authMiddleware, async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to edit this recipe' });
     }
 
-    const updated = await Recipe.findByIdAndUpdate(req.params.id, req.body, {
+    const updateData = { ...req.body };
+
+    // If a new image was uploaded to Cloudinary, update imageUrl
+    if (req.file && req.file.path) {
+      updateData.imageUrl = req.file.path;
+    }
+
+    // Handle ingredients parsing if passed as string
+    if (typeof updateData.ingredients === 'string') {
+      try {
+        updateData.ingredients = JSON.parse(updateData.ingredients);
+      } catch {
+        updateData.ingredients = updateData.ingredients.split('\n').map(i => i.trim()).filter(Boolean);
+      }
+    }
+
+    const updated = await Recipe.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
       runValidators: true
     });
+
     res.json(updated);
   } catch (err) {
     console.error('Update recipe error:', err.message);
