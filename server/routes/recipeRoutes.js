@@ -1,41 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const path = require('path');
-const fs = require('fs');
-const multer = require('multer');
 const Recipe = require('../models/Recipe');
 const authMiddleware = require('../middleware/authMiddleware');
-
-// Ensure uploads directory exists
-const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Multer Storage Configuration
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: (req, file, cb) => {
-    const fileTypes = /jpeg|jpg|png|webp/;
-    const extname = fileTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = fileTypes.test(file.mimetype);
-    if (extname && mimetype) {
-      return cb(null, true);
-    }
-    cb(new Error('Images only (jpg, jpeg, png, webp)!'));
-  }
-});
+const { upload } = require('../middleware/cloudinary');
 
 // 1. GET all recipes
 router.get('/', async (req, res) => {
@@ -96,15 +63,15 @@ router.post('/favorite/:id', toggleFavorite);
 router.put('/favorite/:id', toggleFavorite);
 router.patch('/favorite/:id', toggleFavorite);
 
-// 5. POST create recipe with Multer file upload
+// 5. POST create recipe with Cloudinary file upload
 router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
   try {
     const { title, category, cookingTime, servings, description, ingredients, instructions, imageUrl } = req.body;
 
-    // Use uploaded file path if present, otherwise fallback to URL or default
+    // Cloudinary automatically returns the permanent secure image URL in req.file.path
     let finalImageUrl = imageUrl || '';
-    if (req.file) {
-      finalImageUrl = `https://menuu-book.onrender.com/uploads/${req.file.filename}`;
+    if (req.file && req.file.path) {
+      finalImageUrl = req.file.path;
     }
 
     // Parse ingredients if sent as a JSON string
