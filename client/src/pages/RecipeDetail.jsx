@@ -13,7 +13,7 @@ const RecipeDetail = () => {
   useEffect(() => {
     const fetchRecipe = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/recipes/${id}`);
+        const res = await axios.get(`https://menuu-book.onrender.com/api/recipes/${id}`);
         setRecipe(res.data);
         if (res.data.servings) {
           setCurrentServings(Number(res.data.servings));

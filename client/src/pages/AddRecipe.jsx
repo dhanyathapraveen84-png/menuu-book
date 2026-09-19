@@ -18,7 +18,7 @@ const AddRecipe = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const API_BASE_URL = 'http://localhost:5000/api';
+  const API_BASE_URL = 'https://menuu-book.onrender.com/api';
 
   const handleChange = (e) => {
     const { name, value } = e.target;

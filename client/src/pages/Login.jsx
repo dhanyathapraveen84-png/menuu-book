@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate, Link } from 'react-router-dom';
 
-const Login = () => {
+// Live Render backend base URL
+const API_URL = 'https://menuu-book.onrender.com/api/auth/login';
+
+const Login = ({ onLoginSuccess, switchToSignUp }) => {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({
@@ -24,85 +25,90 @@ const Login = () => {
     setLoading(true);
 
     try {
-      // Points directly to the Express backend running on port 5000
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
-        email: formData.email.trim(),
+      const response = await axios.post(API_URL, {
+        email: formData.email,
         password: formData.password
       });
 
-      // Save token and user details to localStorage
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-
-      // Redirect to homepage/recipes list
-      navigate('/');
-    } catch (err) {
-      console.error('Login error:', err);
-      if (err.response && err.response.data && err.response.data.message) {
-        setError(err.response.data.message);
-      } else {
-        setError('Cannot connect to server. Ensure your backend is running on port 5000.');
+      // Save token & user details
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user || {}));
       }
-    } finally {
+
       setLoading(false);
+      if (onLoginSuccess) {
+        onLoginSuccess(response.data);
+      } else {
+        window.location.reload();
+      }
+    } catch (err) {
+      setLoading(false);
+      const message =
+        err.response?.data?.message || 'Invalid credentials. Please try again.';
+      setError(message);
     }
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '50px auto', padding: '20px', fontFamily: 'sans-serif' }}>
+    <div style={{ maxWidth: '400px', margin: '60px auto', padding: '24px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
       <h2>Welcome Back</h2>
-      <p>Sign in to access your saved recipe collection</p>
+      <p style={{ color: '#6b7280', fontSize: '14px' }}>
+        Sign in to access your saved recipe collection
+      </p>
 
       {error && (
-        <div style={{ padding: '10px', backgroundColor: '#ffebee', color: '#c62828', borderRadius: '4px', marginBottom: '15px' }}>
+        <div style={{ backgroundColor: '#fee2e2', color: '#dc2626', padding: '10px', borderRadius: '4px', marginBottom: '16px', fontSize: '14px' }}>
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '15px' }}>
-          <label style={{ display: 'block', marginBottom: '5px' }}>Email Address</label>
+        <div style={{ marginBottom: '14px' }}>
+          <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: '500' }}>
+            Email Address
+          </label>
           <input
             type="email"
             name="email"
             required
             value={formData.email}
             onChange={handleChange}
-            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px', boxSizing: 'border-box' }}
           />
         </div>
 
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '5px' }}>Password</label>
+        <div style={{ marginBottom: '18px' }}>
+          <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: '500' }}>
+            Password
+          </label>
           <input
             type="password"
             name="password"
             required
             value={formData.password}
             onChange={handleChange}
-            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px', boxSizing: 'border-box' }}
           />
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          style={{
-            width: '100%',
-            padding: '10px',
-            backgroundColor: '#c86b27',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }}
+          style={{ width: '100%', padding: '12px', backgroundColor: '#a05a2c', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer' }}
         >
-          {loading ? 'Signing in...' : 'Sign In'}
+          {loading ? 'Signing In...' : 'Sign In'}
         </button>
       </form>
 
-      <p style={{ marginTop: '15px', textAlign: 'center' }}>
-        Don't have an account? <Link to="/register">Sign Up</Link>
+      <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '14px' }}>
+        Don't have an account?{' '}
+        <span
+          onClick={switchToSignUp}
+          style={{ color: '#a05a2c', cursor: 'pointer', fontWeight: '500' }}
+        >
+          Sign Up
+        </span>
       </p>
     </div>
   );

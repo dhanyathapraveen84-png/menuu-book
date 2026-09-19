@@ -9,13 +9,15 @@ import AddRecipe from './pages/AddRecipe';
 import MyRecipes from './pages/MyRecipes';
 import RecipeDetail from './pages/RecipeDetail';
 import Login from './pages/Login';
+import Register from './pages/Register';
 
 function App() {
   return (
     <Router>
       <Routes>
-        {/* Authentication Page */}
+        {/* Authentication Pages */}
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
         {/* Main Application with Persistent Sidebar Navigation */}
         <Route path="/" element={<Layout />}>
