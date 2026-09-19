@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-// Live Render backend registration endpoint
-const REGISTER_URL = 'https://menuu-book.onrender.com/api/auth/register';
+// Live Render backend base URL
+const API_URL = 'https://menuu-book.onrender.com/api/auth/register';
 
-const Register = ({ onRegisterSuccess, switchToLogin }) => {
+const Register = ({ onRegisterSuccess }) => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    username: '',
+    name: '',
     email: '',
-    password: '',
+    password: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,7 +18,7 @@ const Register = ({ onRegisterSuccess, switchToLogin }) => {
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [e.target.name]: e.target.value
     });
   };
 
@@ -26,27 +28,23 @@ const Register = ({ onRegisterSuccess, switchToLogin }) => {
     setLoading(true);
 
     try {
-      const response = await axios.post(REGISTER_URL, {
-        name: formData.username,
-        username: formData.username,
+      const response = await axios.post(API_URL, {
+        name: formData.name,
         email: formData.email,
-        password: formData.password,
+        password: formData.password
       });
 
-      // Save token and user info if returned
+      // Save token & user details
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user || {}));
       }
 
       setLoading(false);
-
       if (onRegisterSuccess) {
         onRegisterSuccess(response.data);
-      } else if (switchToLogin) {
-        switchToLogin();
       } else {
-        window.location.href = '/';
+        navigate('/');
       }
     } catch (err) {
       setLoading(false);
@@ -57,73 +55,35 @@ const Register = ({ onRegisterSuccess, switchToLogin }) => {
   };
 
   return (
-    <div
-      style={{
-        maxWidth: '400px',
-        margin: '60px auto',
-        padding: '24px',
-        border: '1px solid #e5e7eb',
-        borderRadius: '8px',
-        fontFamily: 'sans-serif',
-      }}
-    >
-      <h2 style={{ marginBottom: '8px' }}>Create an Account</h2>
+    <div style={{ maxWidth: '400px', margin: '60px auto', padding: '24px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
+      <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px' }}>Create an Account</h2>
       <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '20px' }}>
         Sign up to save and manage your favorite recipes
       </p>
 
       {error && (
-        <div
-          style={{
-            backgroundColor: '#fee2e2',
-            color: '#dc2626',
-            padding: '10px',
-            borderRadius: '4px',
-            marginBottom: '16px',
-            fontSize: '14px',
-          }}
-        >
+        <div style={{ backgroundColor: '#fee2e2', color: '#dc2626', padding: '10px', borderRadius: '4px', marginBottom: '14px', fontSize: '14px' }}>
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: '14px' }}>
-          <label
-            style={{
-              display: 'block',
-              marginBottom: '6px',
-              fontSize: '14px',
-              fontWeight: '500',
-            }}
-          >
+          <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: '500' }}>
             Username
           </label>
           <input
             type="text"
-            name="username"
+            name="name"
             required
-            value={formData.username}
+            value={formData.name}
             onChange={handleChange}
-            style={{
-              width: '100%',
-              padding: '10px',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              boxSizing: 'border-box',
-            }}
+            style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '4px', boxSizing: 'border-box' }}
           />
         </div>
 
         <div style={{ marginBottom: '14px' }}>
-          <label
-            style={{
-              display: 'block',
-              marginBottom: '6px',
-              fontSize: '14px',
-              fontWeight: '500',
-            }}
-          >
+          <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: '500' }}>
             Email Address
           </label>
           <input
@@ -132,25 +92,12 @@ const Register = ({ onRegisterSuccess, switchToLogin }) => {
             required
             value={formData.email}
             onChange={handleChange}
-            style={{
-              width: '100%',
-              padding: '10px',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              boxSizing: 'border-box',
-            }}
+            style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '4px', boxSizing: 'border-box' }}
           />
         </div>
 
         <div style={{ marginBottom: '18px' }}>
-          <label
-            style={{
-              display: 'block',
-              marginBottom: '6px',
-              fontSize: '14px',
-              fontWeight: '500',
-            }}
-          >
+          <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: '500' }}>
             Password
           </label>
           <input
@@ -159,42 +106,27 @@ const Register = ({ onRegisterSuccess, switchToLogin }) => {
             required
             value={formData.password}
             onChange={handleChange}
-            style={{
-              width: '100%',
-              padding: '10px',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              boxSizing: 'border-box',
-            }}
+            style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '4px', boxSizing: 'border-box' }}
           />
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          style={{
-            width: '100%',
-            padding: '12px',
-            backgroundColor: '#a05a2c',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '6px',
-            fontWeight: '600',
-            cursor: loading ? 'not-allowed' : 'pointer',
-          }}
+          style={{ width: '100%', padding: '12px', backgroundColor: '#a05a2c', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: '600' }}
         >
-          {loading ? 'Creating Account...' : 'Sign Up'}
+          {loading ? 'Signing Up...' : 'Sign Up'}
         </button>
       </form>
 
-      <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '14px' }}>
+      <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '14px', color: '#4b5563' }}>
         Already have an account?{' '}
-        <span
-          onClick={switchToLogin}
-          style={{ color: '#a05a2c', cursor: 'pointer', fontWeight: '500' }}
+        <Link
+          to="/login"
+          style={{ color: '#a05a2c', fontWeight: '500', textDecoration: 'none' }}
         >
           Sign In
-        </span>
+        </Link>
       </p>
     </div>
   );

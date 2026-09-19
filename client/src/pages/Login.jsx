@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 // Live Render backend base URL
 const API_URL = 'https://menuu-book.onrender.com/api/auth/login';
 
-const Login = ({ onLoginSuccess, switchToSignUp }) => {
+const Login = ({ onLoginSuccess }) => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -40,7 +42,7 @@ const Login = ({ onLoginSuccess, switchToSignUp }) => {
       if (onLoginSuccess) {
         onLoginSuccess(response.data);
       } else {
-        window.location.reload();
+        navigate('/');
       }
     } catch (err) {
       setLoading(false);
@@ -52,13 +54,13 @@ const Login = ({ onLoginSuccess, switchToSignUp }) => {
 
   return (
     <div style={{ maxWidth: '400px', margin: '60px auto', padding: '24px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
-      <h2>Welcome Back</h2>
-      <p style={{ color: '#6b7280', fontSize: '14px' }}>
+      <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px' }}>Welcome Back</h2>
+      <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '20px' }}>
         Sign in to access your saved recipe collection
       </p>
 
       {error && (
-        <div style={{ backgroundColor: '#fee2e2', color: '#dc2626', padding: '10px', borderRadius: '4px', marginBottom: '16px', fontSize: '14px' }}>
+        <div style={{ backgroundColor: '#fee2e2', color: '#dc2626', padding: '10px', borderRadius: '4px', marginBottom: '14px', fontSize: '14px' }}>
           {error}
         </div>
       )}
@@ -74,7 +76,7 @@ const Login = ({ onLoginSuccess, switchToSignUp }) => {
             required
             value={formData.email}
             onChange={handleChange}
-            style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '4px', boxSizing: 'border-box' }}
           />
         </div>
 
@@ -88,27 +90,27 @@ const Login = ({ onLoginSuccess, switchToSignUp }) => {
             required
             value={formData.password}
             onChange={handleChange}
-            style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '6px', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: '10px', border: '1px solid #d1d5db', borderRadius: '4px', boxSizing: 'border-box' }}
           />
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          style={{ width: '100%', padding: '12px', backgroundColor: '#a05a2c', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer' }}
+          style={{ width: '100%', padding: '12px', backgroundColor: '#a05a2c', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: '600' }}
         >
           {loading ? 'Signing In...' : 'Sign In'}
         </button>
       </form>
 
-      <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '14px' }}>
+      <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '14px', color: '#4b5563' }}>
         Don't have an account?{' '}
-        <span
-          onClick={switchToSignUp}
-          style={{ color: '#a05a2c', cursor: 'pointer', fontWeight: '500' }}
+        <Link
+          to="/register"
+          style={{ color: '#a05a2c', fontWeight: '500', textDecoration: 'none' }}
         >
           Sign Up
-        </span>
+        </Link>
       </p>
     </div>
   );
