@@ -10,6 +10,7 @@ import MyRecipes from './pages/MyRecipes';
 import RecipeDetail from './pages/RecipeDetail';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Logout from './pages/Logout';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         {/* Authentication Pages */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/logout" element={<Logout />} />
 
         {/* Main Application with Persistent Sidebar Navigation */}
         <Route path="/" element={<Layout />}>

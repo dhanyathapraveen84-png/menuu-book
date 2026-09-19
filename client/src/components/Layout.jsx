@@ -4,14 +4,27 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 const Layout = () => {
   const navigate = useNavigate();
 
-  // Retrieve user email/name from localStorage if stored, or fallback
-  const userEmail = localStorage.getItem('userEmail') || 'user@example.com';
-  const userName = userEmail.split('@')[0];
+  // Retrieve user data from localStorage, handling either a string or JSON object
+  const storedUser = localStorage.getItem('user');
+  let parsedEmail = '';
+  let parsedName = '';
+
+  try {
+    if (storedUser) {
+      const parsed = JSON.parse(storedUser);
+      parsedEmail = parsed.email || '';
+      parsedName = parsed.name || '';
+    }
+  } catch (e) {
+    // If user is stored as plain string
+  }
+
+  const userEmail = parsedEmail || localStorage.getItem('userEmail') || 'user@example.com';
+  const userName = parsedName || userEmail.split('@')[0];
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userEmail');
-    navigate('/login');
+    // Navigate to dedicated Logout page (Logout.jsx clears localStorage and redirects)
+    navigate('/logout');
   };
 
   const navItems = [
@@ -88,24 +101,25 @@ const Layout = () => {
           ))}
         </nav>
 
-        {/* User Account / Logout Widget */}
+        {/* User Account & Sign Out Section */}
         <div
           style={{
             borderTop: '1px solid #f0f0f0',
             paddingTop: '16px',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between'
+            justifyContent: 'space-between',
+            gap: '8px'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden', flex: 1 }}>
             <div
               style={{
                 width: '34px',
                 height: '34px',
                 borderRadius: '50%',
-                backgroundColor: '#eee',
-                color: '#666',
+                backgroundColor: '#fce4ec',
+                color: '#db3391',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -148,17 +162,24 @@ const Layout = () => {
 
           <button
             onClick={handleLogout}
-            title="Log out"
+            title="Sign out"
             style={{
-              background: 'none',
-              border: 'none',
-              color: '#999',
+              background: '#fff1f2',
+              border: '1px solid #fecdd3',
+              borderRadius: '6px',
+              color: '#e11d48',
               cursor: 'pointer',
-              fontSize: '16px',
-              padding: '6px'
+              fontSize: '12px',
+              fontWeight: '600',
+              padding: '6px 10px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              flexShrink: 0
             }}
           >
-            🚪
+            <span>🚪</span>
+            <span>Exit</span>
           </button>
         </div>
       </aside>
